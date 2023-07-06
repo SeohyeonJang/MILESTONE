@@ -18,6 +18,7 @@ This is Aiffel MILESTONE Team project
 -	스크리닝 모델을 통해 최종 선별된 우수 후보군은 역합성 모델로 전달됨.
 -	역합성 모델은 생성된 유기분자를 분해하여 반응물(Reactants)을 도출함.
 
-
-<image src='https://raw.githubusercontent.com/LubyJ/MILESTONE/main/images/workflow.png' width='70%' height='70%' alt='workflow'>
-
+<div align='center'>
+<image src='https://raw.githubusercontent.com/LubyJ/MILESTONE/main/images/workflow.png' width='80%' height='80%' alt='workflow'><br>
+전체 워크플로우 구성
+</div>
