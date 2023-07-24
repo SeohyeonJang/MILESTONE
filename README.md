@@ -13,7 +13,7 @@ This is Aiffel MILESTONE Team project
 -	생성 모델(Generation Model)을 거쳐 새로운 유기분자 DB 를 생성함.
 -	Novelity, Uniqueness, Validity, SAS(합성가능성지표)를 기준으로 생성된 DB 전처리함.
 -	전처리된 DB는 스크리닝 모델(Screening Model)을 거쳐 우수 후보군(New Additives)을 선정 함.
--	스크리닝 모델은 4개의 선별자(Descriptor)로 이루어져 있음; (1) HOMO 에너지 (2) LUMO 에너지 (3) BoilingPoint(끓는점) (4) Toxicity(독성)
+-	스크리닝 모델은 4개의 선별자(Descriptor)로 이루어져 있음; (1) HOMO 에너지 (2) LUMO 에너지 (3) BoilingPoint(끓는점) (4) Toxicity(독성).
 -	각 선별자는GNN 모델을 이용해 미리 분자의 특성을 사전학습하고, 순차적으로 쌓아 올림으로써 스크리닝 모델을 구성함.
 -	스크리닝 모델을 통해 최종 선별된 우수 후보군은 역합성 모델로 전달됨.
 -	역합성 모델은 생성된 유기분자를 분해하여 반응물(Reactants)을 도출함.
