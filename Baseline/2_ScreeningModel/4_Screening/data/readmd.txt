@@ -1,0 +1,1 @@
+Generation model이 만든 molecules를 pickle 파일로 전환한 파일이 들어올 폴더
