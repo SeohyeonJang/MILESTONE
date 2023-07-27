@@ -4,7 +4,7 @@ export CUDA_VISIBLE_DEVICES=0
 export PYTHONIOENCODING=utf-8
 
 dataset="QM"
-output_dir="../wandb_homo_351epochs_2/"$dataset"/"
+output_dir="../return_test/"$dataset"/"
 
 time_stamp=`date '+%s'`
 
