@@ -15,9 +15,9 @@ from dgl.data.utils import load_graphs, save_graphs
 
 
 class MoleculeDGL(torch.utils.data.Dataset): # 그래프 데이터 및 레이블을 로드하거나 생성
-    def __init__(self, data_dir, split, num_graphs, basis, epsilon, power, edgehop, degs):
-        self.data_dir = data_dir # data_dir = './data/lumo'
-        self.split = split # train, val, test
+    def __init__(self, data_dir, test, num_graphs, basis, epsilon, power, edgehop, degs):
+        self.data_dir = data_dir # data_dir = './data/molecules'
+        self.split = test
         self.num_graphs = num_graphs
         self.pre_processed_file_path = osp.join(data_dir, '%s_dgl_data_processed' % self.split)
         self.labels_file_path = osp.join(data_dir, '%s_labels' % self.split)
@@ -30,7 +30,6 @@ class MoleculeDGL(torch.utils.data.Dataset): # 그래프 데이터 및 레이블
 
         self.graph_lists = []
         self.graph_labels = []
-        # self.n_samples = len(self.data)
         self._prepare()
 
     def _prepare(self): # preprocessed file이 있으면 로드
@@ -38,10 +37,8 @@ class MoleculeDGL(torch.utils.data.Dataset): # 그래프 데이터 및 레이블
             print("Loading the cached file for the %s set... (NOTE: delete it if you change the preprocessing settings)" % (self.split.upper()))
             print("Loading the cached file for the %s set... (NOTE: delete it if you change the preprocessing settings)" % (self.split.upper()))
             self.graph_lists = load_graphs(self.pre_processed_file_path) # 그래프 리스트 로드
-            self.graph_labels = torch.load(self.labels_file_path) # 라벨 로드
 
             assert len(self.graph_lists[0]) == self.num_graphs, "Sample num_graphs again; available idx: train/val/test => 10k/1k/1k"
-            assert len(self.graph_labels) == self.num_graphs, "Sample num_graphs again; available idx: train/val/test => 10k/1k/1k"
 
         else: # 없으면 생성
             print("Generating %d graphs for the %s set..." % (self.num_graphs, self.split.upper()))
@@ -54,9 +51,9 @@ class MoleculeDGL(torch.utils.data.Dataset): # 그래프 데이터 및 레이블
             # loading the sampled indices from file zinc/data/molecules/<split>.index
             # 추출할 분자 개수만큼의 인덱스를 리스트 형태로 만들어야 함.
             # 모든 데이터를 사용할거면 아래 코드 주석처리 하면 됨.
-            # with open(self.data_dir + "/%s.index" % self.split, "r") as f:
-            #     data_idx = [list(map(int, idx)) for idx in csv.reader(f)]
-            #     data = [data[i] for i in data_idx[0]]
+            with open(self.data_dir + "/%s.index" % self.split, "r") as f:
+                data_idx = [list(map(int, idx)) for idx in csv.reader(f)]
+                data = [data[i] for i in data_idx[0]]
 
             assert len(data) == self.num_graphs, "Sample num_graphs again; available idx: train/val/test => 10k/1k/1k"
 
@@ -92,13 +89,11 @@ class MoleculeDGL(torch.utils.data.Dataset): # 그래프 데이터 및 레이블
                 g = basis_transform(g, basis=self.basis, epsilon=self.epsilon, power=self.power, edgehop=self.edgehop, degs=self.degs)
 
                 self.graph_lists.append(g)
-                self.graph_labels.append(molecule['bp'])
 
             # total_time = time.time() - trans_start
             # print('Basis transformation total and avg time:', total_time, total_time / len(data))
             print('Saving...')
             save_graphs(self.pre_processed_file_path, self.graph_lists)
-            torch.save(self.graph_labels, self.labels_file_path)
 
     def __len__(self):
         """Return the number of graphs in the dataset."""
@@ -119,16 +114,20 @@ class MoleculeDGL(torch.utils.data.Dataset): # 그래프 데이터 및 레이블
         """
         return self.graph_lists[idx], self.graph_labels[idx]
 
+    # 필터링 된 분자를 추출하기 위한 함수(인덱스를 이용함)
+    def get_data_by_indices(self, indices):
+        data_by_indices = [self.graph_lists[idx] for idx in indices]
+        return data_by_indices
 
 class MoleculeDataset(torch.utils.data.Dataset):
     def __init__(self, name='QM', config=None):
         t0 = time.time()
         self.name = name
 
-        self.num_atom_type = 11   ### 데이터셋에 따라 상이함!!!
+        self.num_atom_type = 5   ### 데이터셋에 따라 상이함!!!
         self.num_bond_type = 4
 
-        data_dir = './data/bp'
+        data_dir = './data/from_GenModel'
 
         basis = config.basis
         epsilon = config.epsilon
@@ -137,24 +136,19 @@ class MoleculeDataset(torch.utils.data.Dataset):
         degs = config.get('degs', [])
         print('Basis configurations: basis: {}, epsilon: {}, power: {}, degs: {}'.format(basis, epsilon, power, degs))
 
-        self.train = MoleculeDGL(data_dir, 'train', num_graphs=4645, basis=basis, epsilon=epsilon, power=power, # 120496
-                                 edgehop=edgehop, degs=degs)
-        self.val = MoleculeDGL(data_dir, 'val', num_graphs=361, basis=basis, epsilon=epsilon, power=power, # 9372
-                               edgehop=edgehop, degs=degs)
-        self.test = MoleculeDGL(data_dir, 'test', num_graphs=156, basis=basis, epsilon=epsilon, power=power, # 4017
+        self.test = MoleculeDGL(data_dir, 'test', num_graphs=1000, basis=basis, epsilon=epsilon, power=power, # 4017
                                 edgehop=edgehop, degs=degs)
 
-        print('train, test, val sizes :', len(self.train), len(self.test), len(self.val))
+        print('test sizes :', len(self.test))
         print("Time taken: {:.4f}s".format(time.time() - t0))
 
     # form a mini batch from a given list of samples = [(graph, label) pairs]
     def collate(self, samples):
         # The input samples is a list of pairs (graph, label).
-        graphs, labels = map(list, zip(*samples))
-        # (#0515)
-        labels = torch.stack(labels)
+        graphs = samples
+        # labels = torch.stack(labels)
         # print(labels)
         # labels = torch.tensor(np.array(labels)).unsqueeze(1)
         batched_graph = dgl.batch(graphs)
-        return batched_graph, labels
+        return batched_graph
 
