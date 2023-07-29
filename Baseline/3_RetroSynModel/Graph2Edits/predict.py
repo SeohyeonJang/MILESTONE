@@ -6,11 +6,11 @@ import joblib
 from tqdm import tqdm
 from collections import Counter
 import torch
-import pubchempy
 
-from STOUT import translate_forward
+
+
 from rdkit import Chem, RDLogger
-from rdkit.Chem.Draw import IPythonConsole, MolsToGridImage
+from rdkit.Chem import rdMolDescriptors
 import re
 RDLogger.DisableLog("rdApp.*")
 
@@ -65,10 +65,34 @@ def canonicalize(smiles):
     [a.ClearProp('molAtomMapNumber') for a in tmp.GetAtoms()]
     return Chem.MolToSmiles(tmp)
 
+def run_search(beam_model, prod_smi, max_steps, rxn_class ):
+    return beam_model.run_search(prod_smi=prod_smi, max_steps=max_steps, rxn_class=rxn_class)
+
+
+def calculate_molecular_weight(smiles):
+    mol = Chem.MolFromSmiles(smiles)
+    return rdMolDescriptors.CalcExactMolWt(mol)
+
+def run_beam_search_and_write_result(fp, beam_model, prod_smi, max_steps, use_rxn_class, depth):
+    with torch.no_grad():
+        top_k_results = run_search(beam_model, prod_smi=prod_smi, max_steps=max_steps, rxn_class=use_rxn_class)
+    
+    pred_r_layer = top_k_results[0]['final_smi']
+    fp.write(f"{'    ' * depth}pred_r_layer{depth}: {canonicalize_prod(pred_r_layer)}\n")
+    
+    reactants = pred_r_layer.split('.')
+    for i, reactant in enumerate(reactants, start=1):
+        c_reactant = canonicalize_prod(reactant)
+        fp.write(f"{'    ' * (depth + 1)}c_r{i}: {c_reactant}\n")  
+
+        if c_reactant.count(':') >= 3:
+            if depth < 3:  
+                    run_beam_search_and_write_result(fp, beam_model, prod_smi=c_reactant, 
+                                                     max_steps=max_steps, use_rxn_class=use_rxn_class, depth=depth + 1)
+
 def main():
     parser = argparse.ArgumentParser()
-    # parser.add_argument('--experiments', type=str, default='27-06-2022--10-27-22',
-    #                     help='Name of edits prediction experiment')
+
     parser.add_argument('--beam_size', type=int,
                         default=10, help='Beam search width')
     parser.add_argument('--max_steps', type=int, default=9,
@@ -77,27 +101,20 @@ def main():
     
     datadir = f'data/real/'
     # 스크리닝 쪽에서 나오는 파일
-    filename = f'real_product.txt'
+    filename = f'real_product_3.txt'
     test_data = pd.read_csv(os.path.join(datadir, filename) , names=['product_smi'])
     
     model_dir = os.path.join(
             ROOT_DIR, 'data', 'best_model')
     
-
     checkpoint = torch.load(os.path.join(model_dir, 'epoch_123_allNO.pt'))
     config = checkpoint['saveables']
   
-
     model = Graph2Edits(**config, device=DEVICE)
     model.load_state_dict(checkpoint['state'])
     model.to(DEVICE)
     model.eval()
 
-    top_k = np.zeros(args.beam_size)
-    edit_steps_cor = []
-    counter = []
-    stereo_rxn = []
-    stereo_rxn_cor = []
     use_rxn_class = False
     beam_model = BeamSearch(model=model, step_beam_size=10,
                             beam_size=args.beam_size, use_rxn_class=use_rxn_class)
@@ -111,38 +128,17 @@ def main():
     with open(pred_file, 'a') as fp:
         for idx in p_bar:
    
+            # Product smi
             p = test_data['product_smi'][idx]
-    
-            # print('p==>', p)
-            # p = SmilesToSmarts(p)
-            # print('sm p==>', p)
-                            
-            with torch.no_grad():
-                top_k_results = beam_model.run_search(
-                    prod_smi=p, max_steps=args.max_steps, rxn_class=use_rxn_class)
-
             fp.write(f'({idx}) {p}\n')
-            
 
-            beam_matched = False
-            for beam_idx, path in enumerate(top_k_results):
-                pred_smi = path['final_smi']
-                if pred_smi =='final_smi_unmapped':
-                    continue
-                prob = path['prob']
-                pred_set = set(pred_smi.split('.'))
-                
-                fp.write(f'{beam_idx} probability:{prob:.4f} {pred_smi}')
-                for id,react_smi in enumerate(pred_set):
-                    cano_react_smi = canonicalize_prod(react_smi)
-                    #print('react_smi===>',react_smi)
-                    #iupac = pubchempy.get_compounds(react_smi, namespace="smiles")
-                    #iupac = translate_forward(react_smi)
-                    fp.write(f' react_smi:{cano_react_smi} ')
-                fp.write('\n')
-
+            try:
+                run_beam_search_and_write_result(fp, beam_model, prod_smi=p, 
+                                                 max_steps=args.max_steps, use_rxn_class=use_rxn_class, depth=1)
+            except:
+                print(idx,p)
             fp.write('\n')
-
+            
 
 if __name__ == '__main__':
     main()
