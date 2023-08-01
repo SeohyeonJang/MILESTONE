@@ -46,7 +46,7 @@ class MoleculeDGL(torch.utils.data.Dataset): # 그래프 데이터 및 레이블
             print("Generating %d graphs for the %s set..." % (self.num_graphs, self.split.upper()))
 
             with open(self.data_dir + "/%s.pickle" % self.split, "rb") as f:
-                # with open('./pickle_data/1_homo/seed100/train_100.pkl', "rb") as f:
+                # with open('./pickle_data/1_homo/seed100/train.pkl', "rb") as f:
 
                 data = pickle.load(f)
 

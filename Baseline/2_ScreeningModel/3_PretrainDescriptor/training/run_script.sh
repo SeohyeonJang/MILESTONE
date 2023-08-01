@@ -20,7 +20,7 @@ out_file=${output_dir}"stdout/"${time_stamp}_${commit_id}".out"
 err_file=${output_dir}"error/"${time_stamp}_${commit_id}".err"
 
 nohup python -u ./main.py --config=$config_file --id=$commit_id --ts=$time_stamp --dir=$output_dir \
-  --wandb_project="PubchemQC" 1>$out_file 2>$err_file &
+  --wandb_project="PubChemQC" 1>$out_file 2>$err_file &
 
 pid=$!
 

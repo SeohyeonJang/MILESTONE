@@ -1,7 +1,7 @@
 {
   "dataset_name": "PubChemQC",
   "basis": "DEN",
-  "checkpoint_dir": "../../4_Screening/pretrained_model/1_homo/",
+  "checkpoint_dir": "../../4_Screening/pretrained_model/1_homo/seed100/",
   "epsilon": [-0.1, -0.2, -0.3, -0.4, -0.5],
   "power": [[4, 4], [4, 4], [4, 4], [4, 4], [4, 4]],
   "seeds": [0],
