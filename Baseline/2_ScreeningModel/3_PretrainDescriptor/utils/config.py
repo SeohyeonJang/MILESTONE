@@ -1,7 +1,7 @@
 import argparse
 import json5
 from easydict import EasyDict
-
+import wandb
 
 def get_args():
     argparser = argparse.ArgumentParser(description=__doc__)
@@ -25,6 +25,11 @@ def get_args():
         metavar='D',
         default='',
         help='The output directory)')
+    argparser.add_argument(
+        '-w', '--wandb_project',
+        metavar='W',
+        default='',
+        help='The wandb Project name')
     args = argparser.parse_args()
     return args
 
