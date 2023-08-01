@@ -1,4 +1,3 @@
 각 속성에 해당하는(homo, lumo, dipole, etc) 폴더 존재.
 2번 디렉토리에서 pickle 파일 생성시 저장 경로를 여기로 지정.
 Uncertainty check를 위해 앙상블 기법을 활용하므로, random seed별로 5개씩 pickle 파일 생성함.
-ex) train_100, val_100, test_100 => randomseed 100으로 만든 pickle 파일

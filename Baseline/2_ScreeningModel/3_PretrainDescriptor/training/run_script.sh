@@ -3,8 +3,8 @@
 export CUDA_VISIBLE_DEVICES=0
 export PYTHONIOENCODING=utf-8
 
-dataset="QM"
-output_dir="../wandb_homo_351epochs_2/"$dataset"/"
+dataset="PubChemQC"
+output_dir="../out/1_homo/seed100/"
 
 time_stamp=`date '+%s'`
 
@@ -12,7 +12,7 @@ mkdir -p $output_dir"error/"
 mkdir -p $output_dir"stdout/"
 
 
-config_file="./"$dataset".json"
+config_file="./Descriptor.json"
 
 commit_id=`git rev-parse HEAD`
 
@@ -20,7 +20,7 @@ out_file=${output_dir}"stdout/"${time_stamp}_${commit_id}".out"
 err_file=${output_dir}"error/"${time_stamp}_${commit_id}".err"
 
 nohup python -u ./main.py --config=$config_file --id=$commit_id --ts=$time_stamp --dir=$output_dir \
-  --wandb_project="pdf_test" 1>$out_file 2>$err_file &
+  --wandb_project="PubchemQC" 1>$out_file 2>$err_file &
 
 pid=$!
 
