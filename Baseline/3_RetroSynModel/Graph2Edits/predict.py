@@ -42,20 +42,13 @@ def SmilesToSmarts(smi):  # 해당 함수를 사용해서 확인해보시면 될
 
     return sma
 
-def canonicalize_prod(p):
-    import copy
-    p = copy.deepcopy(p)
-    p = canonicalize(p)
-    p_mol = Chem.MolFromSmiles(p)
-    for atom in p_mol.GetAtoms():
-        atom.SetAtomMapNum(atom.GetIdx() + 1)
-    p = Chem.MolToSmiles(p_mol)
-    return p
+
 
 
 def canonicalize(smiles):
     try:
         tmp = Chem.MolFromSmiles(smiles)
+        
     except:
         print('no mol', flush=True)
         return smiles
@@ -65,6 +58,18 @@ def canonicalize(smiles):
     [a.ClearProp('molAtomMapNumber') for a in tmp.GetAtoms()]
     return Chem.MolToSmiles(tmp)
 
+def canonicalize_prod(p):
+    import copy
+    p = copy.deepcopy(p)
+    p = canonicalize(p)
+    p_mol = Chem.MolFromSmiles(p)
+    if p_mol is not None:
+        for atom in p_mol.GetAtoms():
+            atom.SetAtomMapNum(atom.GetIdx() + 1)
+        p = Chem.MolToSmiles(p_mol)
+    return p
+
+
 def run_search(beam_model, prod_smi, max_steps, rxn_class ):
     return beam_model.run_search(prod_smi=prod_smi, max_steps=max_steps, rxn_class=rxn_class)
 
@@ -73,23 +78,88 @@ def calculate_molecular_weight(smiles):
     mol = Chem.MolFromSmiles(smiles)
     return rdMolDescriptors.CalcExactMolWt(mol)
 
-def run_beam_search_and_write_result(fp, beam_model, prod_smi, max_steps, use_rxn_class, depth):
+def run_beam_search_and_write_result(fp, beam_model, prod_smi, max_steps, use_rxn_class, depth, eMolecule, reaction_success):
+
     with torch.no_grad():
         top_k_results = run_search(beam_model, prod_smi=prod_smi, max_steps=max_steps, rxn_class=use_rxn_class)
     
-    pred_r_layer = top_k_results[0]['final_smi']
-    fp.write(f"{'    ' * depth}pred_r_layer{depth}: {canonicalize_prod(pred_r_layer)}\n")
+    pred_r_layer =''
+    # .으로 reactant가 분리 될 때까지 
+    for i, result in enumerate(top_k_results):
+        if '.' in top_k_results[i]['final_smi']:
+            pred_r_layer = top_k_results[i]['final_smi']
+            break
+    
+    if pred_r_layer=='':
+        return
+    
+    this_product_re_success = reaction_success
+
+    fp.write(f"{'    ' * depth}pred_layer{depth}: {canonicalize_prod(pred_r_layer)}\n")
     
     reactants = pred_r_layer.split('.')
+    reactants = sorted(reactants, key=len)
+
+   
+
+    this_layer_eMol_check=True
+
     for i, reactant in enumerate(reactants, start=1):
         c_reactant = canonicalize_prod(reactant)
-        fp.write(f"{'    ' * (depth + 1)}c_r{i}: {c_reactant}\n")  
+        eMol_check = check_inch_key(c_reactant, eMolecule)
+        this_layer_eMol_check &=eMol_check
 
-        if c_reactant.count(':') >= 3:
-            if depth < 3:  
+        fp.write(f"{'    ' * (depth + 1)}react_l{depth}_r{i}:{c_reactant}   eMol:{eMol_check} \n")  
+        if this_layer_eMol_check:
+            this_product_re_success = True
+        else:
+            this_product_re_success = False
+
+        if eMol_check: continue
+        
+                 
+        if c_reactant.count(':') > 3:
+            if depth < 5:  
                     run_beam_search_and_write_result(fp, beam_model, prod_smi=c_reactant, 
-                                                     max_steps=max_steps, use_rxn_class=use_rxn_class, depth=depth + 1)
+                                                     max_steps=max_steps, use_rxn_class=use_rxn_class, depth=depth + 1, 
+                                                     eMolecule=eMolecule, reaction_success=this_product_re_success)
+        else:
+            this_product_re_success = False
+            break
 
+    if this_product_re_success:
+        fp.write(f"this product reactatnt success: {this_product_re_success}\n")
+    
+    return this_product_re_success
+
+def read_eMolecule_from_file(file_path):
+
+    try:
+        # 파일 읽기
+        content = pd.read_csv(file_path, sep='\t', header=None, names=['inchl_key'])
+        return content
+
+    except FileNotFoundError:
+        print("File not found. Please provide a valid file path.")
+        return None
+    
+def smiles_to_inchi(smiles):
+    try:
+        mol = Chem.MolFromSmiles(smiles)
+        inchi_key = Chem.inchi.MolToInchiKey(mol)
+        return inchi_key
+    except:
+        return None
+    
+def check_inch_key(smiles, content):
+
+    this_inch = smiles_to_inchi(smiles)
+    # 데이터 포함 여부 확인
+    if this_inch in content['inchl_key'].values:
+        return True
+    else:
+        return False
+    
 def main():
     parser = argparse.ArgumentParser()
 
@@ -101,11 +171,17 @@ def main():
     
     datadir = f'data/real/'
     # 스크리닝 쪽에서 나오는 파일
-    filename = f'real_product_3.txt'
+    filename = f'smarts_list_41.txt'
     test_data = pd.read_csv(os.path.join(datadir, filename) , names=['product_smi'])
+
+    e_mol_file_path = './eMol/e_mol_inchi.txt'
+
+
+    #eMolecule에 있는지 체크를 위해 
+    eMolecule = read_eMolecule_from_file(e_mol_file_path)
+
     
-    model_dir = os.path.join(
-            ROOT_DIR, 'data', 'best_model')
+    model_dir = os.path.join(ROOT_DIR, 'data', 'best_model')
     
     checkpoint = torch.load(os.path.join(model_dir, 'epoch_123_allNO.pt'))
     config = checkpoint['saveables']
@@ -130,13 +206,15 @@ def main():
    
             # Product smi
             p = test_data['product_smi'][idx]
-            fp.write(f'({idx}) {p}\n')
+            fp.write(f'({idx}) p:{p}\n')
 
-            try:
-                run_beam_search_and_write_result(fp, beam_model, prod_smi=p, 
-                                                 max_steps=args.max_steps, use_rxn_class=use_rxn_class, depth=1)
-            except:
-                print(idx,p)
+            #try:
+            result = run_beam_search_and_write_result(fp, beam_model, prod_smi=p, 
+                                                 max_steps=args.max_steps, use_rxn_class=use_rxn_class, depth=1 , eMolecule=eMolecule, reaction_success=False)
+            
+
+            #except:
+            #    print(p)
             fp.write('\n')
             
 
