@@ -9,14 +9,22 @@ This is Aiffel MILESTONE Team project
 
 ## 전체 워크플로우 구성 및 설명
 -	전체적인 워크플로우 구성은 그림1을 통해 확인 가능함.
--	SMILES code로 분자를 구현한 데이터셋을 그래프 표현으로 변환하여 생성모델로 전달함.
+-	SMILES code로 분자를 구현한 데이터셋을 그래프 표현으로 변환하여 생성모델에서 학습함.
+-	Novelity, Validity가 1.0이 되는 지점에서 분자를 2만개 생성함. 이때 SAS(합성가능성지표)를 3.5 이상을 충족하도록 컨디션을 걸어줌.
+-	Uniqueness 지표는 0.7을 기준으로 잡음
 -	생성 모델(Generation Model)을 거쳐 새로운 유기분자 DB 를 생성함.
--	Novelity, Uniqueness, Validity, SAS(합성가능성지표)를 기준으로 생성된 DB 전처리함.
+
 -	전처리된 DB는 스크리닝 모델(Screening Model)을 거쳐 우수 후보군(New Additives)을 선정 함.
--	스크리닝 모델은 4개의 선별자(Descriptor)로 이루어져 있음; (1) HOMO 에너지 (2) LUMO 에너지 (3) BoilingPoint(끓는점) (4) Toxicity(독성).
--	각 선별자는GNN 모델을 이용해 미리 분자의 특성을 사전학습하고, 순차적으로 쌓아 올림으로써 스크리닝 모델을 구성함.
+-	스크리닝 모델은 3개의 선별자(Descriptor)로 이루어져 있음; (1) HOMO 에너지 (2) LUMO 에너지 (3) Dipole moment(쌍극자 모멘트)
+-	각 선별자는 그래프 기반 GCN 모델을 이용해 미리 분자의 특성을 사전학습하고, 순차적으로 쌓아 올림으로써 스크리닝 모델을 구성함.
+-	각 선별자로 모델 initialization 시에 100, 200, 300 seed에서 각각 학습하여 pretrained model 총 9개를 생성함.
+-	저장된 pretrained model을 모두 불러와 앙상블 기법으로 각 선별자를 예측함
 -	스크리닝 모델을 통해 최종 선별된 우수 후보군은 역합성 모델로 전달됨.
+  
 -	역합성 모델은 생성된 유기분자를 분해하여 반응물(Reactants)을 도출함.
+-	역합성 후 도출된 반응물들은 InchI Key로 변환되어 e-molecule dataset에 동일한 분자가 있는지 체크함.
+-	있다면 역합성 완료. 없다면 Recursive iteration을 돌며 추가 역합성을 진행함.
+-	최대 iteration depth는 5로 지정함. 
 
 <div align='center'>
 <image src='https://raw.githubusercontent.com/LubyJ/MILESTONE/main/images/workflow.png' width='80%' height='80%' alt='workflow'><br>
