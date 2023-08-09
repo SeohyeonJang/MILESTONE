@@ -27,6 +27,6 @@ This is Aiffel MILESTONE Team project
 -	최대 iteration depth는 5로 지정함. 
 
 <div align='center'>
-<image src='https://raw.githubusercontent.com/LubyJ/MILESTONE/main/images/workflow.png' width='80%' height='80%' alt='workflow'><br>
+<image src='[https://raw.githubusercontent.com/LubyJ/MILESTONE/main/images/workflow.png](https://github.com/LubyJ/MILESTONE/blob/2898392cd086f74124b8a39ba5326120ace9f4e7/images/Workflow.png)https://github.com/LubyJ/MILESTONE/blob/2898392cd086f74124b8a39ba5326120ace9f4e7/images/Workflow.png' width='80%' height='80%' alt='workflow'><br>
 전체 워크플로우 구성
 </div>
