@@ -33,7 +33,7 @@
 #### Aiffelton Project Review : 2023.08.11
 
 <div align='center'>
-<img src='https://github.com/LubyJ/MILESTONE/blob/main/images/project_progress.png?raw=true' width='80%' height='80%' alt='workflow'><br>
+<img src='https://github.com/LubyJ/MILESTONE/blob/peunjung/images/project_progress.png?raw=true' width='80%' height='80%' alt='workflow'><br>
 </div><br>
 
 ## 4.WorkFlow 
