@@ -48,7 +48,7 @@
 
 
 
--	SMILES code로 분자를 구현한 데이터셋을 그래프 표현으로 변환하여 생성모델에서 학습함.
+-	SMILES code로 분자를 구현한 데이터셋을 fragment-based 기법으로 생성모델에서 학습.
 -	Novelity, Validity가 1.0이 되는 지점에서 분자를 2만개 생성함. 이때 SAS(합성가능성지표)를 3.5 이상을 충족하도록 컨디션을 걸어줌.
 -	Uniqueness 지표는 0.7을 기준으로 잡음
 -	생성 모델(Generation Model)을 거쳐 새로운 유기분자 DB 를 생성함.
