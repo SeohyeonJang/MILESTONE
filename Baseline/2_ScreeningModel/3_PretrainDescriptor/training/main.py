@@ -7,8 +7,6 @@ from torch.utils.tensorboard import SummaryWriter
 import torch.optim as optim
 import numpy as np
 from tqdm import tqdm
-### importing OGB
-# from ogb.graphproppred import Evaluator, collate_dgl
 
 import csv
 
@@ -89,7 +87,7 @@ def main():
     print(torch.cuda.get_device_name(0), cuda_id)
     print(config)
 
-    wandb.init(project="pdf_test",
+    wandb.init(project="PubChemQC",
                config={'commit_id': config.commit_id[0:7],
                        'cuda_id': cuda_id,
                        'shared_filter': config.get('shared_filter', ''),
@@ -109,7 +107,7 @@ def main():
                        'batch_size': config.hyperparams.batch_size,
                        'num_workers': config.get('num_workers', 'na')},
                save_code=True,
-               name='homo_351epochs_2')
+               name='homo_seed100')
 
 
     for seed in config.seeds:
@@ -122,7 +120,7 @@ def main():
 
         best_valid_epoch = np.argmin(np.array(valid_curve))
         print('Finished test_mae: {}, Validation_mae: {}, best_epoch: {}, best loss: {}'
-              .format(test_curve[best_val_epoch], valid_curve[best_val_epoch],
+              .format(test_curve[best_valid_epoch], valid_curve[best_valid_epoch],
                       best_valid_epoch,  min(trainL_curve)))
 
 
@@ -143,15 +141,15 @@ def run_with_given_seed(config):
 
     trainset, valset, testset = dataset.train, dataset.val, dataset.test
 
-    train_loader = DataLoader(trainset, batch_size=config.hyperparams.batch_size, shuffle=True,
+    train_loader = DataLoader(trainset, batch_size=config.hyperparams.batch_size, shuffle=False,
                               num_workers=config.num_workers, collate_fn=dataset.collate)
     valid_loader = DataLoader(valset, batch_size=config.hyperparams.batch_size, shuffle=False,
                               num_workers=config.num_workers, collate_fn=dataset.collate)
     test_loader = DataLoader(testset, batch_size=config.hyperparams.batch_size, shuffle=False,
                              num_workers=config.num_workers, collate_fn=dataset.collate)
 
-    if config.dataset_name == 'QM':
-        atom_dim = 5 # atom type 개수
+    if config.dataset_name == 'PubChemQC':
+        atom_dim = 8 # atom type 개수
         bond_dim = 4   # bond type 개수
     else:
         raise ValueError('Unknown dataset name {}'.format(config.dataset_name))
@@ -178,40 +176,6 @@ def run_with_given_seed(config):
     trainL_curve = []
 
     cur_epoch = 0
-    # if config.get('resume_train') is not None:
-    #     print("Loading model from {}...".format(config.resume_train), end=' ')
-    #     checkpoint = torch.load(config.resume_train)
-    #     model.load_state_dict(checkpoint['model_state_dict'])
-    #     model.to(device)
-    #     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-    #     scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
-    #     cur_epoch = checkpoint['epoch']
-    #     cur_loss = checkpoint['loss']
-    #     lr = checkpoint['lr']
-    #     print("Model loaded.")
-    #
-    #     print("Epoch {} evaluating...".format(cur_epoch))
-    #     train_perf = eval(model, device, train_loader)
-    #     valid_perf = eval(model, device, valid_loader)
-    #     test_perf = eval(model, device, test_loader)
-    #
-    #     print('Train:', train_perf,
-    #           'Validation:', valid_perf,
-    #           'Test:', test_perf,
-    #           'Train loss:', cur_loss,
-    #           'lr:', lr)
-    #
-    #     epoch_idx.append(cur_epoch)
-    #     train_curve.append(train_perf)
-    #     valid_curve.append(valid_perf)
-    #     test_curve.append(test_perf)
-    #     trainL_curve.append(cur_loss)
-    #
-    #     writer.add_scalars('traP', {ts_fk_algo_hp: train_perf}, cur_epoch)
-    #     writer.add_scalars('valP', {ts_fk_algo_hp: valid_perf}, cur_epoch)
-    #     writer.add_scalars('tstP', {ts_fk_algo_hp: test_perf}, cur_epoch)
-    #     writer.add_scalars('traL', {ts_fk_algo_hp: cur_loss}, cur_epoch)
-    #     writer.add_scalars('lr',   {ts_fk_algo_hp: lr}, cur_epoch)
 
     best_val = float('inf') # 추가
     best_val_pred_labels = None # 추가
@@ -237,8 +201,7 @@ def run_with_given_seed(config):
               'Train loss:', train_loss,
               'lr:', lr)
 
-        wandb.log({"epoch": epoch, "Train loss_mae": train_loss, "Val mae":valid_perf, "Test mae": test_perf, "learning rate": lr},
-                  commit=True)
+        wandb.log({"epoch": epoch, "Train loss_mae": train_loss, "Val mae":valid_perf, "Test mae": test_perf, "learning rate": lr})
 
         epoch_idx.append(epoch)
         valid_curve.append(valid_perf)

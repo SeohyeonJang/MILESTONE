@@ -1,7 +1,7 @@
 {
-  "dataset_name": "PubChemQC",
+  "dataset_name": "QM",
   "basis": "DEN",
-  "checkpoint_dir": "../../4_Screening/pretrained_model/1_homo/seed100/",
+  "resume_train": "/home/sjang/Project/PDF_wandb_premodel_load/pretrained_model/homo.tar",
   "epsilon": [-0.1, -0.2, -0.3, -0.4, -0.5],
   "power": [[4, 4], [4, 4], [4, 4], [4, 4], [4, 4]],
   "seeds": [0],
