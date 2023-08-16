@@ -20,7 +20,7 @@ def save_json(obj, path):
     json.dump(obj, open(path, "w"), indent=2)
 
 
-def commit(experiment_name, time):
+def commit(experiment_name, time):  # git commit 용
     """
     Try to commit repo exactly as it is when starting
     the experiment for reproducibility.
@@ -38,7 +38,7 @@ def commit(experiment_name, time):
         return '<Unable to commit>'
 
 
-def load_dataset(config, kind):
+def load_dataset(config, kind):  # train or test 이름의 preprocess 된 .smi 데이터셋 가져옴.
     assert kind in ['train', 'test']
     path = config.path('data')
     filename = path / f'{kind}.smi'
