@@ -4,11 +4,12 @@ from matplotlib import pyplot as plt
 from matplotlib.gridspec import GridSpec
 import seaborn as sns
 
+# 차트그리는 부분. README.md 의 Plotting.
 
 sns.set('paper')
 sns.set_style('whitegrid', {'axes.grid': False})
 params = {
-    'font.family': 'sans-serif',
+    'font.family': 'DejaVu Serif',
     'font.sans-serif': ['Helvetica'],
     'legend.fontsize': 'x-small',
     'legend.handlelength': 1,
@@ -16,7 +17,7 @@ params = {
     'legend.columnspacing': 0.8,
     'xtick.labelsize': 'x-small',
     'ytick.labelsize': 'x-small'}
-plt.rcParams.update(params)
+plt.rcParams.update(params)  # plt 스타일 저장
 
 ratio = 0.4
 
@@ -33,9 +34,9 @@ MODEL = 'OURS'
 def plot_property(df, name, prop, ax=None):
     new_names = dict([(p, p.upper()) for p in props])
     df.rename(columns=new_names, inplace=True)
-    sns.distplot(df[prop.upper()][df.who==name], hist=False, label=name, ax=ax)
-    ax = sns.distplot(df[prop.upper()][df.who==MODEL], hist=False, label=MODEL, ax=ax)
-    ax.set_aspect(1.0/ax.get_data_ratio()*ratio)
+    sns.displot(df[prop.upper()][df.who==name], label=name, ax=ax)#
+    ax = sns.displot(df[prop.upper()][df.who==MODEL], label=MODEL, ax=ax, aspect=(1.0/ax.get_data_ratio()*ratio))#
+    #ax.aspect(1.0/ax.get_data_ratio()*ratio)
 
 
 def plot_count(df, name, feat, ax=None):
@@ -51,7 +52,7 @@ def plot_counts(df, dataset_name):
     fig, axs = plt.subplots(1, 3)
     for i, f in enumerate(feats):
         plot_count(df, dataset_name, f, ax=axs.flat[i])
-        axs.flat[i].set_aspect(1.0/axs.flat[i].get_data_ratio()*ratio)
+        axs.flat[i].set_aspect(1.0/axs.flat[i].get_data_ratio()*ratio)  # Axes.aspect -> Axes.set_aspect
     fig.savefig(f'counts_{dataset_name}.svg')
 
 
@@ -59,12 +60,12 @@ def plot_props(df, dataset_name):
     fig, axs = plt.subplots(1, 3)
     for i, p in enumerate(props):
         plot_property(df, dataset_name, p, ax=axs.flat[i])
-        axs.flat[i].set_aspect(1.0/axs.flat[i].get_data_ratio()*ratio)
+        axs.flat[i].set_aspect(1.0/axs.flat[i].get_data_ratio()*ratio)  # Axes.aspect -> Axes.set_aspect
     fig.savefig(f'props_{dataset_name}.svg')
 
 
 def plot_paper_figures(run_dir):
-    dataset_name = "ZINC" if "ZINC" in run_dir else "PCBA"
+    dataset_name = "ZINC" if "ZINC" in run_dir else "PQC"
     df = pd.read_csv(os.path.join(run_dir, 'results/samples/aggregated.csv'))
     plot_counts(df, dataset_name)
     plot_props(df, dataset_name)

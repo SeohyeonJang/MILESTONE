@@ -1,7 +1,7 @@
 import argparse
 
 
-def command_parser():
+def command_parser():  # 함수들의 argument 반환용 함수.
     parser = argparse.ArgumentParser()
 
     subps = parser.add_subparsers()
@@ -11,7 +11,7 @@ def command_parser():
         help='train from scratch.')
     subps_train.add_argument(
         "--dataset",
-        choices=['ZINC', 'PCBA'],
+        choices=['ZINC', 'PCBA', 'QM9', 'PQC'],
         help="dataset name.")
     subps_train.add_argument(
         '--title',
@@ -99,7 +99,7 @@ def command_parser():
         help='threshold to clip the gradient norm')
     subps_train.add_argument(
         '--validate_after',
-        default=0.0, type=float,
+        default=0.4, type=float,
         help='threshold below which validation starts')
     subps_train.add_argument(
         '--validation_samples',
@@ -167,7 +167,7 @@ def command_parser():
         help='preprocess (download & clean) datsets.')
     subps_preprocess.add_argument(
         '--dataset', default="ZINC",
-        choices=['ZINC', 'PCBA'],
+        choices=['ZINC', 'PCBA', 'QM9', 'PQC'],
         help='dataset name.')
     subps_preprocess.add_argument(
         '--n_jobs', default=-1, type=int,
